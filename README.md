@@ -768,12 +768,28 @@ without calling SLO. The mod_auth_mellon cookie session will be
 invalidated and the session will be removed from the mod_auth_mellon cache. 
 SLO will not be possible after the mod_auth_mellon session is invalidated.
 If this functionality is enabled, invalidate the session by calling 
-the endpoint "<endpoint path>/invalidate".
+the endpoint "<endpoint path>/invalidate?ReturnTo=<valid url>".
+The "ReturnTo" parameter is required.
+
 Here is a sample configuration to enabled this feature:
 ```ApacheConf
 MellonEnabledInvalidateSessionEndpoint On
 ```
 Default value is Off
+
+
+## Send Expect Header
+The Expect Header save an additional network round-trip and is thus a good idea when
+the request isn't extremely large and the probability for rejection is low.
+For some Apache server version, the Expect Header is not properly managed and the curl command will 
+wait for 1 sec. before sending the body of the request. 
+If the Expect Header is not present, there won't be wait time in the HTTP-Artifact binding.
+
+Here is a sample configuration to not send the Expect header:
+```ApacheConf
+MellonSendExpectHeader Off
+```
+Default value is On
 
 
 ## Probe IdP discovery 

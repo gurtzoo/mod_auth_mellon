@@ -1,7 +1,7 @@
 /*
  *
  *   mod_auth_mellon.c: an authentication apache module
- *   Copyright © 2003-2007 UNINETT (http://www.uninett.no/)
+ *   Copyright ï¿½ 2003-2007 UNINETT (http://www.uninett.no/)
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -483,6 +483,7 @@ int am_httpclient_post(request_rec *r, const char *uri,
     char curl_error[CURL_ERROR_SIZE];
     CURLcode res;
     struct curl_slist *ctheader;
+    am_dir_cfg_rec *cfg = am_get_dir_cfg(r);
 
     /* Initialize the data storage. */
     am_hc_block_header_init(&bh, r->pool);
@@ -536,6 +537,11 @@ int am_httpclient_post(request_rec *r, const char *uri,
                                      content_type,
                                      NULL
                                      ));
+
+    /* Check if the send expect header is "off". */
+    if (cfg->send_expect_header == 0) {
+        ctheader = curl_slist_append(ctheader, "Expect:");
+    }
 
     /* Set headers. */
     res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, ctheader);

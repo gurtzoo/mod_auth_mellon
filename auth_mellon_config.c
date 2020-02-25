@@ -110,9 +110,13 @@ static const int default_env_vars_count_in_n = -1;
 /* The default list of trusted redirect domains. */
 static const char * const default_redirect_domains[] = { "[self]", NULL };
 
-/* The default setting to enabled the invalidation session endpoint
+/* The default setting to enabled the invalidation session endpoint.
  */
 static const int default_enabled_invalidation_session = 0;
+
+/* The default setting to send "Expect-100 Header".
+ */
+static const int default_send_expect_header = 1;
 
 /* This function handles configuration directives which set a 
  * multivalued string slot in the module configuration (the destination
@@ -1275,6 +1279,37 @@ static const char *am_set_invalidate_session_slots(cmd_parms *cmd,
     return NULL;
 }
 
+/* This function handles the MellonSendExpectHeader  configuration directive.
+ * This directive can be set to "on" (default) or "off".
+ *
+ * Parameters:
+ *  cmd_parms *cmd       The command structure for this configuration
+ *                       directive.
+ *  void *struct_ptr     Pointer to the current directory configuration.
+ *  const char *arg      The string argument following this configuration
+ *                       directive in the configuraion file.
+ *
+ * Returns:
+ *  NULL on success or an error string if the argument is wrong.
+ */
+static const char *am_set_send_expect_header_slots(cmd_parms *cmd,
+                                                   void *struct_ptr,
+                                                   const char *arg)
+{
+    am_dir_cfg_rec *d = (am_dir_cfg_rec *)struct_ptr;
+
+    if (strcasecmp(arg, "on") == 0) {
+        d->send_expect_header = 1;
+    }
+    else if (strcasecmp(arg, "off") == 0) {
+        d->send_expect_header = 0;
+    } else {
+        return apr_psprintf(cmd->pool, "%s: must be one of: 'on', 'off'",
+                            cmd->cmd->name);
+    }
+
+    return NULL;
+}
 
 /* This array contains all the configuration directive which are handled
  * by auth_mellon.
@@ -1754,6 +1789,13 @@ const command_rec auth_mellon_commands[] = {
         OR_AUTHCFG,
         "Enabled the session invalidation endpoint. Default is 'off'."
         ),
+    AP_INIT_TAKE1(
+        "MellonSendExpectHeader",
+        am_set_send_expect_header_slots,
+        NULL,
+        OR_AUTHCFG,
+        "Send the Expect Header. Default is 'on'."
+        ),
 
     {NULL}
 };
@@ -1862,6 +1904,8 @@ void *auth_mellon_dir_config(apr_pool_t *p, char *d)
     dir->ecp_send_idplist = inherit_ecp_send_idplist;
 
     dir->enabled_invalidation_session = default_enabled_invalidation_session;
+
+    dir->send_expect_header = default_send_expect_header;
 
     return dir;
 }
@@ -2124,6 +2168,11 @@ void *auth_mellon_dir_merge(apr_pool_t *p, void *base, void *add)
         (add_cfg->enabled_invalidation_session != default_enabled_invalidation_session ?
          add_cfg->enabled_invalidation_session :
          base_cfg->enabled_invalidation_session);
+
+    new_cfg->send_expect_header =
+        (add_cfg->send_expect_header != default_send_expect_header ?
+         add_cfg->send_expect_header :
+         base_cfg->send_expect_header);
 
     return new_cfg;
 }
